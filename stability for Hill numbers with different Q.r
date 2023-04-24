@@ -1,27 +1,30 @@
-###########################################################################################
-###continue from line 224 of 2_categorize climate events and information for sites used.R ##############
-###########################################################################################
-# library(diverse); # richness calculated using this package is different from that of vegan, weird!
+
+rm(list=ls())
+## open the libraries
+library(tidyverse);library(scales);library(ggthemes);library(ggplot2);library(cowplot);library(ggpubr)
 library(chemodiv)
+library(nlme); library(writexl); library(xtable); library(emmeans);library(piecewiseSEM)
 
-colnames(d8)
-d9<-d8%>%mutate(variable.id=paste(site_code, block, plot, trt, year_trt, sep="_"))%>%
-  select(variable.id, standard_taxon, max_cover)
+## color needed 
+colorblind_pal()(8)
+show_col(colorblind_pal()(8))
+## environment needed
+pd<-position_dodge(width=0.5)
+mt<-theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank())
 
-diversity.q<-c()
-for (i in 0:2){
- # i<-0
- div_temp <-diversity(data=d9, type="hn", q=i)%>%bind_cols(d8%>%select(2:9)%>%distinct())%>%
-   mutate(q=i)
-  diversity.q<-rbind(diversity.q, div_temp)
-}
-# the results of hill number with q=0 is not the same as richenss 
+## set up the work directory 
+dir.data<-"H:/resistance and recovery/R codes/raw data/"
+dir.graphs<-"H:/resistance and recovery/R codes/graphs/"
+setwd(dir.graphs)
+## add data for biomass and cover
+d8<-read.csv("biomass and cover data for 55 nutnet sites.csv")
 
-d8.w<-d8%>%mutate(functional_group=NULL, life.form=NULL, Family=NULL)%>%filter(max_cover>0)%>%
+d8.w<-d8%>%mutate(X=NULL, functional_group=NULL, life.form=NULL, Family=NULL)%>%filter(max_cover>0)%>%
   pivot_wider(names_from = "standard_taxon", values_from = "max_cover")%>%distinct()
-cover<-d8.w[,9:1723]
+cover<-d8.w[,9:ncol(d8.w)]
 cover[is.na(cover)]<-0
-library(chemodiv)
 
 diversity.q<-c()
 for (i in 0:2){
@@ -34,9 +37,11 @@ for (i in 0:2){
 ###########################################################################################
 ###calculate resistance and recovery for all non-extreme years for different diversity ##############
 ###########################################################################################
+climate.extremes<-read.csv("raw data of moderate and extreme growing seasons at 55 sites.csv")
+
 colnames(diversity.q)[1]<-"property.value"
 str(diversity.q)
-d.select<-s_dd7%>%filter(year_trt!=0)%>%select("site_code", "year", "year_trt", "spei", "climate")%>% 
+d.select<-climate.extremes%>%filter(year_trt!=0)%>%select("site_code", "year", "year_trt", "spei", "climate")%>% 
   full_join(diversity.q, by=c("site_code", "year", "year_trt"), multiple = "all")%>%
   mutate(variable.id=paste(site_code, block, trt, q, sep="_"))%>%arrange(variable.id)
 
@@ -75,6 +80,17 @@ colnames(resis.recov1)
 # for resistance and recovery, if the previous year is not the same extreme events, this year should not be included due to confounding effects
 # for recovery, if the next year is a different extreme event, this year should not be included due to confounding effects
 # the pre-treatment year and years with missing biomass should be included for selection 
+select.years.extremes<-climate.extremes%>%select(site_code, year_trt, climate, spei)%>%filter(climate!="Normal")%>%
+  mutate(spei1=as.numeric(spei),climate.num.0.67=case_when((spei1>=0.67)~1, (spei1<=- 0.67)~ -1, TRUE~99))%>%
+  group_by(site_code)%>%
+  mutate(consecutive.later=lead(year_trt)-year_trt, climate.type.later=lead(climate.num.0.67)+climate.num.0.67,
+         consecutive.previous=lag(year_trt)-year_trt, climate.type.previous=lag(climate.num.0.67)+climate.num.0.67)%>%
+  mutate(across(c("consecutive.later", "climate.type.later", "consecutive.previous", "climate.type.previous"), ~replace_na(.,999))) %>%
+  mutate(year.resis=ifelse((consecutive.previous==-1 & climate.type.previous==0), NA, year_trt))%>%
+  mutate(year.recov=ifelse((consecutive.later==1 & climate.type.later==0), NA, year.resis))%>%
+  ungroup()%>%select(site_code, climate, year.resis, year.recov)%>%
+  pivot_longer(cols = c("year.resis", "year.recov"), names_to ="year.used" , values_to ="year_trt")%>%
+  mutate(stability.facets=ifelse(grepl("resis", year.used), "resistance", "recovery"), year.used=NULL)%>%filter(!is.na(year_trt))
 
 select.resis.recov<-c()
 for(cut in c(0.67, 1, 1.28, 1.5, 2)){
@@ -150,12 +166,11 @@ for (cut in  c(0.67, 1, 1.28, 1.5, 2)){
 unique(data.stability.facets$n.sites)
 
 #############################################################################################
-############ nutrient addition effects on stability for all aspects and  facets  ##########
+############ nutrient addition effects on stability for all aspects and  facets  ############
 #############################################################################################
 # run analyses 
 colnames(data.stability.facets)
-data.stability.facets.sub<-data.stability.facets%>%
-  filter(!is.na(values))%>%filter(!values%in% c("Inf", "-Inf"))
+data.stability.facets.sub<-data.stability.facets%>%filter(!is.na(values))%>%filter(!values%in% c("Inf", "-Inf"))
 
 all.data.l_1<-data.stability.facets.sub%>%mutate(variable.id=paste(cutoff, stability.facets1, q, sep="_"))%>% 
   mutate(values1=log(values))
@@ -218,6 +233,7 @@ eff.trt4$stability.facets1<-factor(eff.trt4$stability.facets1, levels = c("invar
     labs(x=NULL, y="Effect size of nutrient addition", color="Q"))
 # ggsave(pp.trt, width=13.3, height=6.64, dpi=600, file="effects on stability facets in diversity with different Q.png")
 
+# to get the legend for pentagons (the effect size is wrong in this figure)
 colour.crosswalk <- c("positive" = "black", "negative" = "red")
 (pp.trt.all<-eff.trt4%>%filter((cutoff %in% c(1.28) ))%>%mutate(Value.scaled=abs(Value)*10)%>%
     mutate(direction=ifelse(Value>=0, "positive", "negative"))%>%
@@ -270,3 +286,4 @@ for(i in c(0.67, 1.28)){
   ggsave(pp.trt.effects1, height=6.64, width=13.3, file=paste0("effects on stability facets for hill numbers ", i , ".png"))
 }
 
+# the end
