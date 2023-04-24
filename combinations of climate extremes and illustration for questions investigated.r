@@ -24,7 +24,7 @@ all.combi.1<-all.combi%>%bind_cols(all.combi.num)%>%
 
 
 #############################################################################################
-##### draw examples of treatments effects on stability facets and their relationships ########
+##### draw examples of treatments effects on stability facets and their relationships #######
 #############################################################################################
 stability.facets.list<-c("invariability", "resistance_Dry", "resistance_Wet", "recovery_Dry", "recovery_Wet")
 
