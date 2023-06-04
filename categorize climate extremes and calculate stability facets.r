@@ -419,6 +419,7 @@ for (cut in  c(0.67, 1, 1.28, 1.5, 2)){
   }
 unique(data.stability.facets$n.sites)
 
+
 #############################################################################################
 ############ nutrient addition effects on stability for all aspects and  facets  ############
 #############################################################################################
@@ -426,6 +427,24 @@ colnames(data.stability.facets)
 data.stability.facets.sub<-data.stability.facets%>%filter(!is.na(values))%>%filter(!values%in% c("Inf", "-Inf"))
 all.data.l_1<-data.stability.facets.sub%>%mutate(variable.id=paste(cutoff, community.property, stability.facets1, sep="_"))%>% 
     mutate(values1=ifelse(community.property=="composition", values, log(values)))
+
+# plot raw data for different sites
+(pp.trt.raw<-all.data.l_1%>%filter(cutoff %in% c(0.67))%>%filter(!(stability.facets1=="invariability" & community.property=="biomass"))%>%
+    filter(!(stability.facets1=="invariability" & community.property=="richness"))%>%
+    mutate(stability.facets2=ifelse(stability.facets1 %in% c("invariability", "invariability.d"), "invariability", stability.facets1))%>%
+    ggplot(aes(stability.facets2, values1, shape=community.property, color=trt ))+ theme_cowplot(font_size = 20)+panel_border()+
+    stat_summary(fun=mean, geom="point", size=2, position=position_dodge(width=0.8), alpha=0.6)+
+    stat_summary(fun.data =mean_cl_boot, geom="errorbar", width=0.1, position=position_dodge(width=0.8))+
+    facet_wrap(~site_code, ncol=5)+
+    scale_shape_manual(values = c(16, 18, 17))+
+    guides(color = guide_legend(title = "Treatment", override.aes = list(shape = NA)),
+           shape = guide_legend(title = "Commmunity aspects"))+
+    theme(legend.position ="bottom", axis.text.x = element_text(angle = 90, vjust=0.7, hjust=1))+
+    labs(x=NULL, y=NULL, color=NULL, shape=NULL))
+
+# ggsave(pp.trt.raw, file="raw data for each stability facets based on cutoff 0.67.pdf", width = 21, height = 29.7, dpi=600)
+
+
 # look at the data distribution 
 # all.data.l_1%>%filter(cutoff==1.28)%>%ggplot()+geom_density(aes(x=values1, color=trt))+facet_wrap(~variable.id, scales = "free")
 
