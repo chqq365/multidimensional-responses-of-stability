@@ -171,6 +171,16 @@ table(s_dd7$climate)
 
 # write.csv(s_dd7, file="raw data of moderate and extreme growing seasons at 55 sites.csv")
 
+# also save the trend of SPEI
+(pp.spei.trend<-s_dd3%>%filter(site_code %in%num.year.at.least.4$site_code)%>%
+    filter(!site_code %in%c("kibber.in"))%>%
+    ggplot(aes(year1, dif.re)) +mt+theme_cowplot(font_size = 20)+
+    geom_point()+
+    facet_wrap(~site_code, scale="free_y", ncol=5)+
+    geom_hline(yintercept = 0, linetype="dashed", color="red")+
+    labs(x="Year", y="SPEI"))
+# ggsave(pp.spei.trend, file="SPEI over time.pdf", width = 21, height = 29.7, dpi=600)
+
 ###########################################################################################
 ################ calculate resistance and recovery for all non-extreme years ##############
 ###########################################################################################
@@ -428,7 +438,7 @@ data.stability.facets.sub<-data.stability.facets%>%filter(!is.na(values))%>%filt
 all.data.l_1<-data.stability.facets.sub%>%mutate(variable.id=paste(cutoff, community.property, stability.facets1, sep="_"))%>% 
     mutate(values1=ifelse(community.property=="composition", values, log(values)))
 
-# plot raw data for different sites
+# plot raw data for stability facets for different sites
 (pp.trt.raw<-all.data.l_1%>%filter(cutoff %in% c(0.67))%>%filter(!(stability.facets1=="invariability" & community.property=="biomass"))%>%
     filter(!(stability.facets1=="invariability" & community.property=="richness"))%>%
     mutate(stability.facets2=ifelse(stability.facets1 %in% c("invariability", "invariability.d"), "invariability", stability.facets1))%>%
