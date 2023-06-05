@@ -195,7 +195,7 @@ d.select<-s_dd7%>%filter(year_trt!=0)%>%select("site_code", "year", "year_trt", 
 ## calculate mean values in normal years 
 d.select_norm<-d.select%>%filter(climate=="Normal")%>% group_by(variable.id) %>% dplyr::summarise(avg.property=mean(property.value))
 
-d.select_r1<-d.select%>%merge(d.select_norm, by=c("variable.id"))%>% mutate(resistance=avg.property/abs(property.value - avg.property))
+d.select_r1<-d.select%>%merge(d.select_norm, by=c("variable.id"))%>% mutate(deviation.property=abs(property.value - avg.property), resistance=avg.property/abs(property.value - avg.property))
  
 # get resistance data by deleting normal climate events 
 resis1<-d.select_r1%>%filter(climate!="Normal")%>%mutate(stability.facets="resistance")%>%dplyr::rename(values=resistance)%>%
@@ -905,6 +905,39 @@ look_each.block_avg<-climate.extreme.cut0.67%>%filter(site_code=="look.us" & cli
     theme(axis.text.y = element_text(angle=30))+
     labs(x="Years after nutrient addition", y="SPEI                            Aboveground biomass   ", color="Climate\n extremes", shape=NULL, linetype="Treatments", alpha="Years used"))
 # ggsave(pp.look.bio, dpi=600,width=13.3, height=6.64,  file="above ground biomass at site look.us.png")
+
+# show an example how resistance and recovery is calculated using block 1 at site look.us 
+(look.year.resis<-select.years.extremes%>%filter( site_code=="look.us" & year_trt >0 )%>%filter(stability.facets=="resistance"))
+
+cut<-0.67; max.year.look<-d8%>%select(site_code, year_trt)%>%group_by(site_code)%>%summarise(n.max=max(year_trt))%>%filter(site_code=="look.us") 
+
+look.year.recov<-s_dd7%>%filter(site_code=="look.us" & year_trt >0)%>%select(site_code, year_trt, climate, spei)%>%distinct()%>%filter(climate!="Normal")%>%
+  mutate(spei1=as.numeric(spei))%>%
+  arrange(site_code, year_trt)%>%group_by(site_code)%>%
+  mutate(climate.num=case_when((spei1>=cut)~1,
+                               (spei1<=- cut)~ -1,
+                               TRUE~0), consecutive=lead(year_trt)-year_trt, climate.type=lead(climate.num)-climate.num, consecutive1=ifelse(is.na(consecutive), 999, consecutive))%>%
+  mutate(year.recov=ifelse((consecutive1==1 & climate.type==0), NA, year_trt))%>%
+  merge(select.years.extremes%>%filter(stability.facets=="recovery" & year_trt!=0), by=c("site_code", "year_trt", "climate"))%>%filter(year_trt!=max.year.look$n.max)%>%filter(!is.na(year.recov))
+
+look.rr<-recov%>%filter( site_code=="look.us" & block==1)%>%mutate(climate1=case_when(climate %in% c("Extreme dry", "Moderate dry")~"Dry",  climate %in% c("Extreme wet", "Moderate wet")~"Wet", TRUE ~ "Normal"))%>%
+  mutate(resistance1=ifelse(year_trt %in% look.year.resis$year_trt, resistance, NA), recovery1=ifelse(year_trt %in% look.year.recov$year.recov, recovery, NA))%>%
+  group_by(community.property, trt, climate1)%>%mutate(resistance.avg=mean(resistance1, na.rm=T), recovery.avg=mean(recovery1, na.rm=T))%>%
+  select(community.property, year_trt, climate1, spei, trt, property.value, avg.property, deviation.property, resistance, recovery, resistance1, recovery1, resistance.avg, recovery.avg)%>%
+  arrange(community.property, trt)
+
+colnames(recov_com)
+look.rr.com<-rr.com1%>% filter(site_code=="look.us" & block==1)%>%
+  mutate(climate1=case_when(climate %in% c("Extreme dry", "Moderate dry")~"Dry",  climate %in% c("Extreme wet", "Moderate wet")~"Wet", TRUE ~ "Normal"))%>%
+  mutate(recovery=lead(sim)/sim, consecutive=lead(year_trt)- year_trt, recovery1=ifelse(consecutive==1, recovery, NA))%>%
+   mutate(community.property="composition")%>%ungroup()%>%
+   mutate(resistance1=ifelse(year_trt %in% look.year.resis$year_trt, resistance, NA), recovery1=ifelse(year_trt %in% look.year.recov$year.recov, recovery, NA))%>%
+   group_by(community.property, trt, climate1)%>%mutate(resistance.avg=mean(resistance1, na.rm=T), recovery.avg=mean(recovery1, na.rm=T))%>%
+   select(community.property, year_trt, climate1, spei, trt, sim, resistance, recovery,resistance1, recovery1, resistance.avg, recovery.avg)%>% 
+   arrange(community.property, year_trt, trt)
+
+# write.csv(look.rr, file="an example for calculating resistance and recovery for biomass and richness using site look.us.csv")
+# write.csv(look.rr.com, file="an example for calculating resistance and recovery for community composition using site look.us.csv")
 
 ###########################################################################################
 # average biomass, richness, composition during and one year after climate events using cutoff of 0.67sd #
