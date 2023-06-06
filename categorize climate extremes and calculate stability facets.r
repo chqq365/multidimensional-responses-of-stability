@@ -174,7 +174,7 @@ table(s_dd7$climate)
 # also save the trend of SPEI
 (pp.spei.trend<-s_dd3%>%filter(site_code %in%num.year.at.least.4$site_code)%>%
     filter(!site_code %in%c("kibber.in"))%>%
-    ggplot(aes(year1, dif.re)) +mt+theme_cowplot(font_size = 20)+
+    ggplot(aes(year1, spei)) +mt+theme_cowplot(font_size = 20)+
     geom_point()+
     facet_wrap(~site_code, scale="free_y", ncol=5)+
     geom_hline(yintercept = 0, linetype="dashed", color="red")+
@@ -443,8 +443,8 @@ all.data.l_1<-data.stability.facets.sub%>%mutate(variable.id=paste(cutoff, commu
     filter(!(stability.facets1=="invariability" & community.property=="richness"))%>%
     mutate(stability.facets2=ifelse(stability.facets1 %in% c("invariability", "invariability.d"), "invariability", stability.facets1))%>%
     ggplot(aes(stability.facets2, values1, shape=community.property, color=trt ))+ theme_cowplot(font_size = 20)+panel_border()+
-    stat_summary(fun=mean, geom="point", size=2, position=position_dodge(width=0.8), alpha=0.6)+
-    stat_summary(fun.data =mean_cl_boot, geom="errorbar", width=0.1, position=position_dodge(width=0.8))+
+    stat_summary(fun=mean, geom="point", size=2, position=position_dodge(width=0.7), alpha=0.6)+
+    stat_summary(fun.data =mean_cl_boot, geom="errorbar", width=0.1, position=position_dodge(width=0.7))+
     facet_wrap(~site_code, ncol=5)+
     scale_shape_manual(values = c(16, 18, 17))+
     guides(color = guide_legend(title = "Treatment", override.aes = list(shape = NA)),
@@ -855,9 +855,6 @@ for(i in unique(Aspect_data_cor$id1)){
   
   ggsave(pp.asp2, height=6.64, width=13.3, dpi=600, file=paste0("relationships between community Aspects ", i , ".png"))
 }
-
-
-
 
 ###########################################################################################
 ##### show biomass at each site during different growing seasons using cutoff of 0.67sd #######
