@@ -928,7 +928,9 @@ look.rr.com<-rr.com1%>% filter(site_code=="look.us" & block==1)%>%
    mutate(community.property="composition")%>%ungroup()%>%
    mutate(resistance1=ifelse(year_trt %in% look.year.resis$year_trt, resistance, NA), recovery1=ifelse(year_trt %in% look.year.recov$year.recov, recovery, NA))%>%
    group_by(community.property, trt, climate1)%>%mutate(resistance.avg=mean(resistance1, na.rm=T), recovery.avg=mean(recovery1, na.rm=T))%>%
-   select(community.property, year_trt, climate1, spei, trt, sim, resistance, recovery,resistance1, recovery1, resistance.avg, recovery.avg)%>% 
+   mutate(normal.value=ifelse(climate1=="Normal", sim, NA))%>%
+  group_by(community.property, trt, climate1)%>%mutate(normal.avg=mean(normal.value, na.rm=T))%>%relocate(normal.avg, .before = resistance)%>%
+   select(community.property, year_trt, climate1, spei, trt, sim, normal.avg, resistance, recovery,resistance1, recovery1, resistance.avg, recovery.avg)%>% 
    arrange(community.property, year_trt, trt)
 
 # write.csv(look.rr, file="an example for calculating resistance and recovery for biomass and richness using site look.us.csv")
