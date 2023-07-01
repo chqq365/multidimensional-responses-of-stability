@@ -441,17 +441,18 @@ all.data.l_1<-data.stability.facets.sub%>%mutate(variable.id=paste(cutoff, commu
 # plot raw data for stability facets for different sites
 (pp.trt.raw<-all.data.l_1%>%filter(cutoff %in% c(0.67))%>%filter(!(stability.facets1=="invariability" & community.property=="biomass"))%>%
     filter(!(stability.facets1=="invariability" & community.property=="richness"))%>%
-    mutate(stability.facets2=ifelse(stability.facets1 %in% c("invariability", "invariability.d"), "invariability", stability.facets1))%>%
-    ggplot(aes(stability.facets2, values1, shape=community.property, color=trt ))+ theme_cowplot(font_size = 25)+panel_border()+
-    stat_summary(fun=mean, geom="point", size=3, position=position_dodge(width=0.7), alpha=0.6)+
-    stat_summary(fun.data =mean_cl_boot, geom="errorbar", width=0.1, position=position_dodge(width=0.7))+
-    facet_wrap(~site_code, ncol=5)+
-    scale_shape_manual(values = c(16, 18, 17))+
-    guides(color = guide_legend(title = "Treatment", override.aes = list(shape = NA)),
-           shape = guide_legend(title = "Commmunity aspects"))+
-    theme(legend.position ="top", axis.text.x = element_text(angle = 90, vjust=0.7, hjust=1))+
-    labs(x=NULL, y=NULL, color=NULL, shape=NULL))
-# ggsave(pp.trt.raw, file="raw data for each stability facets based on cutoff 0.67.pdf", width = 21, height = 29.7, dpi=600)
+    mutate(stability.facets2=ifelse(stability.facets1 %in% c("invariability", "invariability.d"), "invariability", stability.facets1),
+           variable.id=paste(community.property, stability.facets2, sep="_"))%>%
+    select(cutoff, site_code, community.property, stability.facets2, variable.id, block,trt, values1)%>%
+    pivot_wider(values_from = "values1", names_from = "trt")%>%
+    ggplot(aes(Control, NPK))+ theme_cowplot(font_size = 22)+panel_border()+
+     geom_point(size=2, alpha=0.5)+
+    facet_wrap(~variable.id, scale="free", ncol=5)+
+    geom_abline(intercept = 0, slope=1, linetype="dotted")+
+    scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.1))+
+    labs(x="Stability under ambient conditions", y="Stability under nutrient addition"))
+# ggsave(pp.trt.raw, file="raw data for each stability facets based on cutoff 0.67.pdf", width = 21, height = 15, dpi=600)
 
 # look at the data distribution 
 # all.data.l_1%>%filter(cutoff==1.28)%>%ggplot()+geom_density(aes(x=values1, color=trt))+facet_wrap(~variable.id, scales = "free")
@@ -579,6 +580,38 @@ data.stability.facets.relation<-data.stability.facets.sub%>%filter(cutoff %in% c
 all.data.l_1<-data.stability.facets.relation%>%
   mutate(variable.id=paste(cutoff, community.property, site_code,  trt, sep="_"))%>%
   pivot_wider(names_from=stability.facets1, values_from = values)
+unique(all.data.l_1$grp)
+
+#################### plot raw data of correlations among stability facets #######################################
+all.data.l_11<-all.data.l_1%>%filter(cutoff==0.67)%>%  mutate(variable.id=paste(cutoff, community.property, site_code, block, trt, sep="_"))
+
+all.data.l_2<-all.data.l_11%>%  pivot_longer(cols = invariability : recovery_Dry)%>%select(variable.id, name, value)
+
+all.data.l_3 <- all.data.l_2 %>%
+  inner_join(all.data.l_2, by = c("variable.id"), suffix = c("_1", "_2")) %>%
+  
+  mutate(corr.type=paste(name_1, name_2, sep="_"))%>%
+  filter(corr.type %in% c("invariability_resistance_Dry", "invariability_resistance_Wet",
+                          "invariability_recovery_Dry", "invariability_recovery_Wet",
+                          "resistance_Dry_resistance_Wet", "resistance_Dry_recovery_Dry", "resistance_Dry_recovery_Wet",
+                          "resistance_Wet_recovery_Dry", "resistance_Wet_recovery_Wet", "recovery_Dry_recovery_Wet"))%>%
+  merge(all.data.l_11%>%select(cutoff, community.property, site_code, block, trt, variable.id)%>%distinct(), by=c("variable.id"))%>%
+  mutate(grp=paste0(site_code, trt, community.property, corr.type))
+
+colnames(all.data.l_3)  
+for(cp in c("biomass", "composition", "richness")){ 
+ # cp<-"biomass"
+(pp<-all.data.l_3%>%filter(community.property==cp)%>%
+    ggplot(aes(value_1, value_2, color=trt, group=grp))+theme_cowplot(font_size = 22)+panel_border()+
+    geom_point(alpha=0.2, size=2)+
+    facet_wrap(~corr.type, scale="free", ncol=4)+
+    geom_smooth(aes(group=grp), method="lm", se=F, alpha=0.5)+
+    labs(x="Stability facet 1", y="Stability facet 2", color="Treatments"))
+ggsave(pp, file=paste0("raw data for relationship between stability facets in ", cp, ".pdf"), width = 21, height = 15, dpi=600)
+
+}
+
+#############################################################################################
 
 corr.stab.facet<-c()
 for(id in unique(all.data.l_1$variable.id)){ 
@@ -725,6 +758,36 @@ for(i in unique(facet_data_cor_stab$id1)){
 all.data.l_1<-data.stability.facets.relation%>%
   mutate(variable.id=paste(cutoff, stability.facets1, site_code,  trt, sep="_"))%>%
   pivot_wider(names_from=community.property, values_from = values)
+
+#################### plot raw data of correlations among community aspects #######################################
+all.data.l_11<-all.data.l_1%>%filter(cutoff==0.67)%>%  mutate(variable.id=paste(cutoff, stability.facets1, site_code, block, trt, sep="_"))
+
+all.data.l_2<-all.data.l_11%>%  pivot_longer(cols = c("biomass", "richness", "composition"))%>%select(variable.id, name, value)
+
+all.data.l_3 <- all.data.l_2 %>%
+  inner_join(all.data.l_2, by = c("variable.id"), suffix = c("_1", "_2")) %>%
+  mutate(corr.type=paste(name_1, name_2, sep="_"))%>%
+  filter(corr.type %in% c("biomass_richness", "biomass_composition",  "composition_richness"))%>%
+  merge(all.data.l_11%>%select(cutoff, stability.facets1, site_code, block, trt, variable.id)%>%distinct(), by=c("variable.id"))%>%
+  mutate(grp=paste0(site_code, trt, stability.facets1, corr.type))
+
+colnames(all.data.l_3)  
+unique(all.data.l_3$stability.facets1)
+
+for(cp in c("invariability",  "recovery_Dry",   "recovery_Wet",   "resistance_Dry", "resistance_Wet")){ 
+  # cp<-"invariability"
+  (pp<-all.data.l_3%>%filter(stability.facets1==cp)%>%
+     ggplot(aes(value_1, value_2, color=trt, group=grp))+theme_cowplot(font_size = 22)+panel_border()+
+     geom_point(alpha=0.2, size=2)+
+     facet_wrap(~corr.type, scale="free", ncol=4)+
+     geom_smooth(aes(group=grp), method="lm", se=F, alpha=0.5)+
+     labs(x=paste0(cp), y=paste0(cp), color="Treatments"))
+  
+  ggsave(pp, file=paste0("raw data for relationship between community aspects in ", cp, ".pdf"), width = 21, height = 5, dpi=600)
+  
+}
+#############################################################################################
+
 
 corr.asp<-c()
 for(id in unique(all.data.l_1$variable.id)){ 
@@ -931,7 +994,7 @@ look.rr.com<-rr.com1%>% filter(site_code=="look.us" & block==1)%>%
    mutate(normal.value=ifelse(climate1=="Normal", sim, NA))%>%
   group_by(community.property, trt, climate1)%>%mutate(normal.avg=mean(normal.value, na.rm=T))%>%relocate(normal.avg, .before = resistance)%>%
    select(community.property, year_trt, climate1, spei, trt, sim, normal.avg, resistance, recovery,resistance1, recovery1, resistance.avg, recovery.avg)%>% 
-   arrange(community.property, year_trt, trt)
+   arrange(community.property, trt)
 
 # write.csv(look.rr, file="an example for calculating resistance and recovery for biomass and richness using site look.us.csv")
 # write.csv(look.rr.com, file="an example for calculating resistance and recovery for community composition using site look.us.csv")
