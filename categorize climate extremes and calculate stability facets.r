@@ -418,7 +418,8 @@ for (cut in  c(0.67, 1, 1.28, 1.5, 2)){
  data.stability.facets<-rbind(data.stability.facets, all.stability)
   }
 unique(data.stability.facets$n.sites)
-
+# save the data 
+# write.csv(data.stability.facets, file="raw data for 5 stability facets in 3 community aspects.csv")
 
 #############################################################################################
 ############ nutrient addition effects on stability for all aspects and  facets  ############
@@ -583,10 +584,7 @@ for(cp in c("biomass", "composition", "richness")){
                mapping=ggplot2::aes(colour = all.data.l_11_temp$trt, alpha=0.7),
                diag = "blank", upper = "blank", axisLabels = c("show"), switch = "both")+
       geom_line(aes(group=all.data.l_11_temp$grp), linewidth = 0.2, alpha = .5, stat = "smooth", method = "lm", se=F)+
-      # geom_line(aes(color=all.data.l_11_temp$trt), linewidth = 2, alpha = .5, stat = "smooth", method = "lm", se=F)+
-      
-      # geom_abline(data=slopes, mapping=aes(slope = emmean, intercept = 0))+
-      theme_cowplot(font_size = 25)+panel_border())
+       theme_cowplot(font_size = 25)+panel_border())
   
   ggsave(pp, file=paste0("raw data for relationship between stability facets in ", cp, ".pdf"), width = 21, height = 15, dpi=600)
   
@@ -1055,6 +1053,7 @@ for(pl in unique(composition$plot.id)){
 }
 inv.com.normal1<-composition%>%select("plot.id", "site_code", "trt", "block")%>%distinct()%>%
   merge(y=inv.com.normal, by=c("plot.id"))%>%mutate(climate="Normal", events="During", plot.id=NULL) # higher values indicate higher resistance
+inv.com.normal1%>%group_by(trt)%>%summarise(avg=mean(sim))
 
 ## calculate resistance and recovery
 rr.com<-c()
@@ -1107,36 +1106,79 @@ composition.au$events<-factor(composition.au$events, levels = c("During", "Durin
     labs(x=NULL, y="Community similarity", color=NULL))
 # ggsave(pp.composition.u.o,  width=13.3, height=6.64, file="composition similarity During and one year after.pdf")
 
-# do a formal test to see whether nutrient addition increased deviation during and after a dry and wet growing season
-colnames(climate.extreme.cut0.67.au)
-colnames(composition.au)
+###########################################################################################
+########### formal tests for normal levels and deviation from the normal levels ###########
+###########################################################################################
 
-# add 0.001 because some deviations were 0, this will lead to "Inf" after log transformation 
-climate.extreme.cut0.67.au1<-climate.extreme.cut0.67.au%>%select(site_code, year_trt,  climate, trt,  block,  value,   events, climate1, name, community.property)%>%
-  rbind(composition.au%>%mutate(name="dev_composition", community.property="composition", value=sim)%>%select(site_code, year_trt,  climate, trt,  block,  value,   events, climate1, name, community.property))%>%
-  mutate(variable.id=paste(community.property, name, events, climate1))%>%
-  mutate(value1=ifelse(name=="dev_property", log(value+0.001), value))
+# do a formal test to see whether nutrient addition increased normal-level community aspects  
+colnames(climate.extreme.cut0.67_block_avg)
+colnames(inv.com.normal1)
 
-eff.dif.dev<-c()
-for(va in unique(climate.extreme.cut0.67.au1$variable.id)){
-  # va<-"dev_property During Wet"
-  climate.extreme.cut0.67.au1.temp<-climate.extreme.cut0.67.au1%>%filter(variable.id==va)
-  mod<-lme(value1 ~ trt, random = ~1|site_code/block, data=climate.extreme.cut0.67.au1.temp)
+normal.levels<-climate.extreme.cut0.67_block_avg%>%dplyr::rename(avg.value=avg_property)%>%
+  rbind(inv.com.normal1%>%mutate(community.property="composition", avg.value=sim)%>%select(site_code, community.property, block, trt, avg.value))%>%
+  mutate(avg.value1=ifelse(community.property=="composition",  avg.value, log(avg.value)))
+colnames(normal.levels)
+
+eff.normal<-c()
+for(com in unique(normal.levels$community.property)){
+  # com<-"composition"
+  normal.levels.temp<-normal.levels%>%filter(community.property==com)
+  mod<-lme(avg.value ~ trt, random = ~1|site_code/block, data=normal.levels.temp)
   # plot(mod)
   t<-xtable(summary(mod)$tTable)
   rs<-rsquared(mod)
   get.sd.sites<-as.numeric(VarCorr(mod)[,"StdDev"][2])
   get.sd.block<-as.numeric(VarCorr(mod)[,"StdDev"][4])
-  t1<-t%>%mutate(r2m=rs$Marginal, r2c=rs$Conditional, get.sd.sites=get.sd.sites, get.sd.block=get.sd.block,  terms=rownames(.),  variable.id=va)
+  t1<-t%>%mutate(r2m=rs$Marginal, r2c=rs$Conditional, get.sd.sites=get.sd.sites, get.sd.block=get.sd.block,  terms=rownames(.),  community.property=com)
+  
+  eff.normal<-rbind(eff.normal, t1) 
+}
+eff.normal1<-eff.normal%>%mutate(across(1:9, \(x) round(x, 2)))%>%dplyr::rename(p='p-value')
+eff.normal.sig<-eff.normal1%>% filter(p<=0.05 & terms!="(Intercept)")
+
+# do a formal test to see whether nutrient addition increased deviation during and after a dry and wet growing season relative to normal levels 
+colnames(climate.extreme.cut0.67.au)
+colnames(composition.au)
+# add 0.001 because some deviations were 0, this will lead to "Inf" after log transformation 
+climate.extreme.cut0.67.au1<-climate.extreme.cut0.67.au%>%select(site_code, year_trt,  climate, trt,  block,  value,   events, climate1, name, community.property)%>%
+  rbind(composition.au%>%filter(climate1!="Normal")%>%mutate(name="dev_composition", community.property="composition", value=sim)%>%select(site_code, year_trt,  climate, trt,  block,  value,   events, climate1, name, community.property))%>%
+  mutate(variable.id=paste(community.property, name, events, climate1))%>%
+  mutate(value1=ifelse(name=="dev_property", log(value+0.001), value))
+
+eff.dif.dev<-c()
+for(va in unique(climate.extreme.cut0.67.au1$variable.id)){
+  # va<-"composition dev_composition One year after Wet"
+  climate.extreme.cut0.67.au1.temp<-climate.extreme.cut0.67.au1%>%filter(variable.id==va)
+  mod<-lme(value1 ~ trt, random = ~1|site_code/block/year_trt, data=climate.extreme.cut0.67.au1.temp)
+  # plot(mod)
+  t<-xtable(summary(mod)$tTable)
+  rs<-rsquared(mod)
+  get.sd.sites<-as.numeric(VarCorr(mod)[,"StdDev"][2])
+  get.sd.block<-as.numeric(VarCorr(mod)[,"StdDev"][4])
+  get.sd.year<-as.numeric(VarCorr(mod)[,"StdDev"][6])
+  
+  t1<-t%>%mutate(r2m=rs$Marginal, r2c=rs$Conditional, get.sd.sites=get.sd.sites, get.sd.block=get.sd.block, get.sd.year=get.sd.year,  terms=rownames(.),  variable.id=va)
   
   eff.dif.dev<-rbind(eff.dif.dev, t1) 
 }
+
 eff.dif.dev1<-eff.dif.dev%>%mutate(across(1:9, \(x) round(x, 2)))%>%dplyr::rename(p='p-value')%>%
   merge(climate.extreme.cut0.67.au1%>%select(community.property, name, events, climate1, variable.id)%>%distinct(), by=c("variable.id"))%>%
   mutate(name1=ifelse(name=="dif_property", "Change", "Deviation"))%>%
-  select(community.property, name1, events, climate1, terms, Value, Std.Error, DF, 't-value', p, r2m,  r2c,  get.sd.block, get.sd.sites)
-#  %>% filter(p<=0.05 & terms!="(Intercept)")
- write.csv(eff.dif.dev1, file="full table of treatment effects on difference and deviation of community aspects.csv")
+  select(community.property, name1, events, climate1, terms, Value, Std.Error, DF, 't-value', p, r2m,  r2c, get.sd.year, get.sd.block, get.sd.sites)
+
+eff.dif.dev.sig<-eff.dif.dev1 %>% filter(p<=0.05 & terms!="(Intercept)")
+
+# add the normal and extreme test together 
+colnames(eff.normal1)
+colnames(eff.dif.dev1)
+
+eff.normal.dev<-eff.dif.dev1%>%mutate(events1=gsub(" extreme", "", events), events2= paste(events1, climate1))%>%
+  select(community.property, name1, events2, terms, Value, Std.Error, DF, 't-value', p, r2m,  r2c, get.sd.year, get.sd.block, get.sd.sites)%>%
+  rbind(eff.normal1%>%mutate(name1="average", events2="During normal", get.sd.year="")%>%select(community.property, name1, events2, terms, Value, Std.Error, DF, 't-value', p, r2m,  r2c, get.sd.year, get.sd.block, get.sd.sites))
+eff.normal.dev %>% filter(p<=0.05 & terms!="(Intercept)")
+
+# write.csv(eff.normal.dev, file="full table of treatment effects on normal levels, difference and deviation of community aspects.csv")
 
 ###########################################################################################
 ########################### sort the information for sites used ###########################
