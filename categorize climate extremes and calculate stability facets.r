@@ -1,18 +1,15 @@
 
 rm(list=ls())
 ## open the libraries
-library(tidyverse);library(scales);library(ggthemes);library(ggplot2);library(cowplot);library(ggpubr)
+library(tidyverse);library(scales);library(ggthemes);library(GGally); library(ggplot2);library(cowplot);library(ggpubr)
 library(betapart)
 library(nlme); library(writexl); library(xtable); library(emmeans);library(piecewiseSEM)
+## environment needed
+pd<-position_dodge(width=0.5)
 
 ## color needed 
 colorblind_pal()(8)
 show_col(colorblind_pal()(8))
-## environment needed
-pd<-position_dodge(width=0.5)
-mt<-theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank())
 
 ## set up the work directory 
 dir.data<-"H:/resistance and recovery/R codes/raw data/"
@@ -157,7 +154,7 @@ s_dd7<-s_dd6%>%filter(site_code %in%num.year.at.least.4$site_code)%>%
  
 # relevel climate events
 s_dd7$climate<-factor(s_dd7$climate, levels=c("Extreme dry", "Moderate dry", "Normal", "Moderate wet", "Extreme wet"))
-(pp<-ggplot(s_dd7, aes(year_trt, spei, color=climate, shape=bio.data2))+geom_point(size=5)+mt+theme_cowplot(font_size = 25)+
+(pp<-ggplot(s_dd7, aes(year_trt, spei, color=climate, shape=bio.data2))+geom_point(size=5)+theme_cowplot(font_size = 25)+
     facet_wrap(~site_code, scale="free_x", ncol=5)+
     scale_x_continuous(expand=c(0,0), limits = c(-0.5,15), breaks = seq(0,16,2))+
     scale_color_manual(values = c("#E69F00","#F0E442",  "#000000", "#56B4E9",  "#0072B2"))+
@@ -753,7 +750,7 @@ for(cp in c("invariability",  "recovery_Wet",   "resistance_Wet", "resistance_Dr
                diag = "blank", upper = "blank", axisLabels = c("show"), switch = "both")+
       geom_line(aes(group=all.data.l_11_temp$grp), linewidth = 0.2, alpha = .5, stat = "smooth", method = "lm", se=F)+
       # labs(title = paste(cp))+
-      theme_cowplot(font_size = 25)+panel_border())
+      theme_cowplot(font_size =40)+panel_border())
   
   ggsave(pp, file=paste0("raw data for relationship between community aspects in ", cp, ".pdf"), width = 21, height = 15, dpi=600)
   
