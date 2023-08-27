@@ -1,4 +1,10 @@
 
+rm(list=ls())
+library(tidyverse)
+## set up the work directory 
+dir.graphs<-"H:/resistance and recovery/R codes/graphs/"
+setwd(dir.graphs)
+
 ###########################################################################################
 ############# construct all possible combinations for extreme growing seasons ##############
 ###########################################################################################
@@ -81,8 +87,8 @@ colnames(aspect_values)<-c("From_aspect","To_aspect","value")
            width = as.integer((abs(value) * 5) + 1), sig="marginal-significant")%>%
     gg.triangle())
 
-(all.plots<-plot_grid(fig.a, fig.b, fig.c, labels = "AUTO", 
+(all.plots<-plot_grid(fig.a, fig.b, fig.c, labels = "auto", 
                       nrow=1, vjust = 8.5,  label_fontface = "bold", label_size = 18 ))
-ggsave(all.plots, height=6.64, width=13.3, dpi=600, file="components for conceptual figure.png")
+ggsave(all.plots, height=6.64, width=13.3, dpi=600, file="components for conceptual figure.pdf")
 
 
