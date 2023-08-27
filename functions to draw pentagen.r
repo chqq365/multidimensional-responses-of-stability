@@ -5,11 +5,11 @@ library(ggpubr)
 # adjust font family and size in annotate to match that of ggplot 
 # https://stackoverflow.com/questions/65057107/annotate-font-is-different-from-the-other-texts-in-the-figure-with-ggplot2
 family <- "sans"
-fontsize <- 16 / .pt
+fontsize <- 9 / .pt
 
 gg.pentagon <- function(data) {
   colour.crosswalk <- c("positive" = "black", "negative" = "red")
-  alpha.crosswalk <- c("non-significant" = 0.1, "marginal-significant" = 0.3, "significant"=0.95)
+  alpha.crosswalk <- c("non-significant" = 0.2, "marginal-significant" = 0.4, "significant"=0.95)
   
   nudge <- 0.25
   ggplot(data = data, aes(x = x, y = y)) +
