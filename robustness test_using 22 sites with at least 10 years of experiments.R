@@ -1,7 +1,7 @@
 
 
 # continue after the r script of "categorize climate extremes and calculate stability facets"
-
+fontsize <- 18 / .pt
 
 ###########################################################################################
 ################ calculate resistance and recovery for all non-extreme years ##############
@@ -10,7 +10,7 @@ table(num.year.at.least.4$number.of.years)
 # select sites with more than 10 years of treatments
 num.year.at.least.10<-num.year.at.least.4%>%filter(number.of.years >=10)
 
-  # delete sites that do not have one extreme or normal year 
+# delete sites that do not have one extreme or normal year 
   s_dd7_check.extreme<-s_dd7 %>%filter(site_code %in%num.year.at.least.10$site_code)%>%filter(year_trt>0)%>%
     mutate(extreme.events=ifelse(climate=="Normal", "normal", "extreme"))%>%
     group_by(site_code, extreme.events)%>%summarise(N=length(year_trt))%>%filter(N>0)%>%
@@ -212,7 +212,6 @@ num.year.at.least.10<-num.year.at.least.4%>%filter(number.of.years >=10)
   inv.com<-c()
   for(pl in unique(d.select.com$variable.id)){
     # pl<-"rook.uk_2_NPK_all_composition"
-    
     ## delete never occurred species to speed up calculation
     data<-d.select.com%>%filter(variable.id==pl)%>%dplyr::select(variable.id, year_trt, standard_taxon, max_cover)%>%pivot_wider(names_from = standard_taxon, values_from = max_cover)%>%
       replace(is.na(.), 0)%>%mutate(variable.id=NULL, year_trt=NULL)%>%dplyr::select(which(!colSums(.)==0))
@@ -284,7 +283,6 @@ num.year.at.least.10<-num.year.at.least.4%>%filter(number.of.years >=10)
     arrange(cutoff, community.property, stability.facets1)
   table(eff.trt.facets.full$community.property)
   eff.trt.facets.full[,5:13]<-round(eff.trt.facets.full[,5:13], 2)
-  
   
   #############################################################################################
   ###calculate correlation between stability facets within biomass, composition, and richness within sites ##
@@ -427,22 +425,17 @@ num.year.at.least.10<-num.year.at.least.4%>%filter(number.of.years >=10)
   # write_xlsx(estimated.ci.asp1%>%mutate(number.sites=NULL), path="estimated relationships among community aspects using emmeans.xlsx", col_names = TRUE)
   
   summary.eff.trt.facets<-eff.trt.facets.full
-  summary.estimated.relation.stability.facets
+  summary.estimated.relation.stability.facets<-estimated.ci1
   summary.estimated.relation.community.aspects<-estimated.ci.asp1
-
-
+# check significant effects
 summary.eff.trt.facets.sig<-summary.eff.trt.facets%>%filter(p<=0.05  & terms!="(Intercept)" & stability.facets1!="invariability" & cutoff==0.67)
-
 summary.estimated.relation.stability.facets.sig<-summary.estimated.relation.stability.facets%>%
   mutate(sig=ifelse(((upper.CL/lower.CL)>0|upper.CL==0|lower.CL==0), "significant", "non-significant"))%>%filter(sig=="significant" & cutoff==0.67)
-
 summary.estimated.relation.community.aspects.sig<-summary.estimated.relation.community.aspects%>%
   mutate(sig=ifelse(((upper.CL/lower.CL)>0|upper.CL==0|lower.CL==0), "significant", "non-significant"))%>%filter(sig=="significant" & cutoff==0.67)
-
 # write_xlsx(summary.eff.trt.facets, path="effects of nutrient addition on stability facets in the short and long term.xlsx", col_names = TRUE)
 # write_xlsx(summary.estimated.relation.stability.facets, path="estimated relationships among stability facets using emmeans in the short and long term.xlsx", col_names = TRUE)
 # write_xlsx(summary.estimated.relation.community.aspects, path="estimated relationships among community aspects using emmeans in the short and long term.xlsx", col_names = TRUE)
-
 
 # to get the legend for pentagons (the effect size is wrong in this figure)
 colour.crosswalk <- c("positive" = "black", "negative" = "red")
@@ -501,7 +494,6 @@ for(i in c(1.28, 0.67)){
   ggsave(pp.trt.effects, height=6, width=13.3, dpi=600, file=paste0("effects on stability facets for ", i , "_with at least 10 years of data.pdf"))
 }
 
-
 ################ plot treatment effects on correlation among stability facets  ##############
 colnames(estimated.ci)
 estimated.ci1<-corr.stab.facet.l%>%select(cutoff, community.property, correlation.type, variable.id)%>%distinct()%>%
@@ -542,6 +534,7 @@ facet_data_cor_stab <- estimated.ci1%>%filter(cutoff %in% c(0.67, 1.28))%>%
          sig=ifelse(((upper.CL/lower.CL)>0|upper.CL==0|lower.CL==0), "significant", "non-significant"))%>%
   mutate(id=paste(cutoff,  community.property, trt, sep="_"), id1=paste(cutoff, sep="_"))
 
+fontsize <- 18 / .pt
 list_plots <- vector('list', length(unique(facet_data_cor_stab$id)))
 
 for (i in unique(facet_data_cor_stab$id)){
