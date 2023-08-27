@@ -16,7 +16,6 @@ dir.data<-"H:/resistance and recovery/R codes/raw data/"
 dir.graphs<-"H:/resistance and recovery/R codes/graphs/"
 setwd(dir.graphs)
 ## add data for biomass and cover
-load("data for control and NPK.rdata")
 d8<-read.csv("biomass and cover data for 55 nutnet sites.csv")
 #################################################################################################
 ##################################### growing season data #######################################
@@ -100,7 +99,6 @@ ggplot(s_dd3, aes(year1, spei)) + theme_bw() + geom_point() +
   facet_wrap(~site_code, scale="free_y")+
   geom_hline(yintercept = 0, linetype="dashed", color="red")
 che <- s_dd3 %>% group_by(site_code) %>% summarise_at("spei", list(mean, sd))## 
-
 
 # do a formal test to see whether there is trends of spei over time 
 # install.packages("funtimes")
@@ -687,6 +685,7 @@ facet_data_cor_stab <- estimated.ci1%>%filter(cutoff %in% c(0.67, 1.28))%>%
          sig=ifelse(((upper.CL/lower.CL)>0|upper.CL==0|lower.CL==0), "significant", "non-significant"))%>%
   mutate(id=paste(cutoff,  community.property, trt, sep="_"), id1=paste(cutoff, sep="_"))
 
+fontsize <- 18 / .pt
 list_plots <- vector('list', length(unique(facet_data_cor_stab$id)))
 
 for (i in unique(facet_data_cor_stab$id)){
@@ -739,10 +738,10 @@ corr.asp.l<-all.data.l_1%>%ungroup()%>%select(cutoff, stability.facets1, site_co
   merge(corr.asp, by=c("variable.id"))%>%mutate(variable.id=NULL)%>% 
   pivot_longer(cols =c("bio_com", "bio_div", "com_div"), names_to = "correlation.type")%>%filter(!is.na(value))%>%
   mutate(variable.id=paste(cutoff, stability.facets1, correlation.type,  sep="_"))
+che.range<-corr.asp.l%>%filter(value %in% c(0, -1, 1))
 
 ## look at treatment effects
 trt.corr.asp<-c(); estimated.ci.asp<-c()
-
 for(id in unique(corr.asp.l$variable.id)){ 
   # id<-"0.67_recovery_Dry_bio_div_all"
   data2<-corr.asp.l%>%filter(variable.id==id)
@@ -770,7 +769,6 @@ for(id in unique(corr.asp.l$variable.id)){
 trt.corr.asp1<-corr.asp.l%>%select(cutoff, stability.facets1, correlation.type, variable.id)%>%distinct()%>%
   merge(trt.corr.asp, by=c("variable.id"))%>%mutate(variable.id=NULL)%>%mutate(across(4:11,\(x) round(x, 2)))%>%dplyr::rename(p='p-value')%>%
   arrange(cutoff, stability.facets1,  terms, correlation.type)
-table(trt.corr.asp1$stability.facets1)
 
 # sort the significant effects 
 range(trt.corr.asp1$number.sites)
@@ -849,5 +847,4 @@ for(i in unique(Aspect_data_cor$id1)){
   
   ggsave(pp.asp2, height=6.64, width=13.3, dpi=600, file=paste0("relationships between community Aspects ", i , "_detrended spei.pdf"))
 }
-
 # the end 
