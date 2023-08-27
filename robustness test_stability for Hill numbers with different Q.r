@@ -14,7 +14,7 @@ setwd(dir.graphs)
 ## add data for biomass and cover
 d8<-read.csv("biomass and cover data for 55 nutnet sites.csv")
 
-d8.w<-d8%>%mutate(X=NULL, functional_group=NULL, life.form=NULL, Family=NULL)%>%filter(max_cover>0)%>%
+d8.w<-d8%>%mutate(X=NULL, Family=NULL)%>%filter(max_cover>0)%>%
   pivot_wider(names_from = "standard_taxon", values_from = "max_cover")%>%distinct()
 cover<-d8.w[,9:ncol(d8.w)]
 cover[is.na(cover)]<-0
@@ -155,7 +155,6 @@ for (cut in  c(0.67, 1.28)){
   all.stability<-stb2%>%filter(site_code%in%temp.data.cut$site_code)%>%mutate(cutoff=cut)%>%bind_rows(temp.data.cut)%>%mutate(n.sites=n.sites)         
   data.stability.facets<-rbind(data.stability.facets, all.stability)
 }
-
 unique(data.stability.facets$n.sites)
 
 #############################################################################################
@@ -188,7 +187,6 @@ for(i in unique(all.data.l_1$variable.id)){
   t1$terms<-rownames(t1)
   t1$variable.id<-i
   t1$n.sites<-n.sites
-  
   eff.trt.facets<-rbind(eff.trt.facets, t1) 
 }
 
@@ -254,6 +252,17 @@ facet_data <- eff.trt4 %>% filter(cutoff %in% cut)%>% filter(!(stability.facets1
          width = as.integer((abs(value) * 10) ))%>%
   mutate(id=paste(cutoff, q, sep="_"))
 
+
+list_plots <- vector('list', length(unique(facet_data$id)))
+for (i in unique(facet_data$id)){
+  # i<-"0.67_0"
+  facet_data_temp<-facet_data%>%filter(id==i)%>% mutate(sig=case_when(p<=0.05 ~ "significant",  TRUE~"non-significant"))
+  facet_data_temp$sig<-factor(facet_data_temp$sig, levels = c("non-significant", "significant"))
+  fontsize <- 12 / .pt; size.npk<-16 / .pt
+  
+  list_plots[[i]]<-gg.pentagon(data = facet_data_temp)+ 
+    geom_label(aes( x = 0, y = 0, label = "NPK"), fill="white", size = size.npk)
+}
 
 for(i in c(0.67, 1.28)){ 
   # i<-"1.28"
