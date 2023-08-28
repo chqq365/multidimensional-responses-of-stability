@@ -507,7 +507,8 @@ eff.trt4$stability.facets1<-factor(eff.trt4$stability.facets1, levels = c("invar
 colour.crosswalk <- c("positive" = "black", "negative" = "red")
 (pp.trt.all<-eff.trt4%>%filter((cutoff %in% c(1.28)))%>%mutate(Value.scaled=abs(Value)*10)%>%
     mutate(direction=ifelse(Value>=0, "positive", "negative"))%>%
-    ggplot(aes(stability.facets1, Value.scaled,  colour = as.character(direction), size = (Value.scaled/10)))+theme_bw(base_size = 16)+
+    ggplot(aes(stability.facets1, Value.scaled,  colour = as.character(direction), size = (Value.scaled/10)))+
+    theme_bw(base_size = 10)+
     facet_wrap(~community.property)+
     geom_point(position=pd, pch=15,alpha=0.6)+
     scale_colour_manual(values = colour.crosswalk) +
@@ -538,7 +539,7 @@ for (i in unique(facet_data$id)){
   # i<-"1.28_all_richness"
   facet_data_temp<-facet_data%>%filter(id==i)%>% mutate(sig=case_when(p<=0.05 ~ "significant",  TRUE~"non-significant"))
   facet_data_temp$sig<-factor(facet_data_temp$sig, levels = c("non-significant", "significant"))
-  fontsize <- 16 / .pt; size.npk<-20 / .pt
+  fontsize <- 12 / .pt; size.npk<-16 / .pt
   
   list_plots[[i]]<-gg.pentagon(data = facet_data_temp)+ 
     geom_label(aes( x = 0, y = 0, label = "NPK"), fill="white", size = size.npk)
@@ -553,12 +554,13 @@ for(i in c(1.28, 0.67)){
                              list_plots_temp$composition,
                              list_plots_temp$richness,
                              legend,
-                             rel_widths = c(4.5,4.5,4.5,1.5),
+                             rel_widths = c(4.5,4.5,4.5,1.8),
                              nrow=1, vjust = 5, hjust=-0.1, 
-                             labels = c("A (Biomass)", "B (Composition)", "C (Richness)"), label_fontface = "bold", label_size = 18))
+                             labels = c("a (Biomass)", "b (Composition)", "c (Richness)"), label_fontface = "bold", label_size = 12))
   
-  ggsave(pp.trt.effects, height=6, width=13.3, dpi=600, file=paste0("effects on stability facets for ", i , "_detrended spei.pdf"))
-}
+  ggsave(pp.trt.effects, height=4, width=8.26, dpi=600, file=paste0("effects on stability facets for ", i , "_detrended spei.pdf"))
+  ggsave(pp.trt.effects, height=4, width=8.26, dpi=600, file=paste0("effects on stability facets for ", i , "_detrended spei.png"))
+   }
 
 #############################################################################################
 ###calculate correlation between stability facets within biomass, composition, and richness within sites ##
@@ -653,7 +655,8 @@ estimated.ci1<-corr.stab.facet.l%>%select(cutoff, community.property, correlatio
 
 # get the legend for pentagons (the effect size is wrong in this figure)
 (pp.cor<-estimated.ci1%>%filter(cutoff==1.28)%>%mutate(Value.scaled=abs(emmean)*10)%>%
-    ggplot(aes(correlation.type, Value.scaled,  colour = factor(direction), size = (Value.scaled/10)))+theme_bw(base_size = 16)+
+    ggplot(aes(correlation.type, Value.scaled,  colour = factor(direction), size = (Value.scaled/10)))+
+    theme_bw(base_size = 10)+
     facet_grid(trt~community.property, scales = "free_y")+
     geom_point(position=pd, pch=15, alpha=0.6)+
     #geom_errorbar(aes(ymin=lower.CL, ymax=upper.CL), width=.1, position=pd) +
@@ -685,7 +688,6 @@ facet_data_cor_stab <- estimated.ci1%>%filter(cutoff %in% c(0.67, 1.28))%>%
          sig=ifelse(((upper.CL/lower.CL)>0|upper.CL==0|lower.CL==0), "significant", "non-significant"))%>%
   mutate(id=paste(cutoff,  community.property, trt, sep="_"), id1=paste(cutoff, sep="_"))
 
-fontsize <- 18 / .pt
 list_plots <- vector('list', length(unique(facet_data_cor_stab$id)))
 
 for (i in unique(facet_data_cor_stab$id)){
@@ -708,11 +710,13 @@ for(i in unique(facet_data_cor_stab$id1)){
                      list_plots_temp$richnessNPK,
                      nrow=2))
   (pp.cor1<-plot_grid(pp.cor, legend.cor, rel_widths = c(8.6, 1.4)))
-  (pp.cor2<-ggpubr::annotate_figure(pp.cor1, top=text_grob("Biomass                                        Composition                                    Richness                          ", size=18, face = "bold") ,
-                                    left=text_grob("NPK                               Control", rot=90, face = "bold", size=18)))
+  (pp.cor1<-plot_grid(pp.cor, legend.cor, rel_widths = c(8.6, 1.4)))
+  (pp.cor2<-ggpubr::annotate_figure(pp.cor1, top=text_grob("Biomass                                       Composition                                       Richness                          ", size=10, face = "bold") ,
+                                    left=text_grob("NPK                                  Control", rot=90, face = "bold", size=10)))
   
-  ggsave(pp.cor2, height=6.64, width=13.3, dpi=600, file=paste0("relationships between stability facets ", i , "_with detrended spei.pdf"))
-}
+  ggsave(pp.cor2, height=4, width=8.26, dpi=600, file=paste0("relationships between stability facets ", i , "_with detrended spei.pdf"))
+  ggsave(pp.cor2, height=4, width=8.26, dpi=600, file=paste0("relationships between stability facets ", i , "_with detrended spei.png"))
+   }
 
 #############################################################################################
 ##correlation between biomass and composition, biomass and richness, composition and richness within sites#
@@ -842,9 +846,10 @@ for(i in unique(Aspect_data_cor$id1)){
                      nrow=3))
   (pp.asp1<-plot_grid(pp.asp, legend.cor, rel_widths = c(8.6, 1.4)))
   (pp.asp2<-ggpubr::annotate_figure(pp.asp1, 
-                                    top=text_grob("  Invariability            Resistance_Dry            Resistance_Wet            Recovery_Dry            Recovery_Wet                           ", size=16, face = "bold") ,
-                                    left=text_grob("                     NPK                              Control", rot=90, face = "bold", size=16)))
+                                    top=text_grob("  Invariability            Resistance_Dry            Resistance_Wet            Recovery_Dry            Recovery_Wet                           ", size=10, face = "bold") ,
+                                    left=text_grob("                     NPK                              Control", rot=90, face = "bold", size=10)))
   
-  ggsave(pp.asp2, height=6.64, width=13.3, dpi=600, file=paste0("relationships between community Aspects ", i , "_detrended spei.pdf"))
-}
+  ggsave(pp.asp2,  height=4, width=8.26, dpi=600, file=paste0("relationships between community Aspects ", i , "_detrended spei.pdf"))
+  ggsave(pp.asp2,  height=4, width=8.26, dpi=600, file=paste0("relationships between community Aspects ", i , "_detrended spei.png"))
+  }
 # the end 
