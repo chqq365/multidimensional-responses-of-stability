@@ -277,7 +277,8 @@ for(i in c(0.67, 1.28)){
   (pp.trt.effects1<-plot_grid(pp.trt.effects,
                               legend, rel_widths = c(8.8, 1.2)))
  
-  ggsave(pp.trt.effects1, height=6.64, width=13.3, file=paste0("effects on stability facets for hill numbers ", i , ".pdf"))
-}
+  ggsave(pp.trt.effects1, height=4, width=8.26, dpi=600, file=paste0("effects on stability facets for hill numbers ", i , ".pdf"))
+  ggsave(pp.trt.effects1, height=4, width=8.26, dpi=600, file=paste0("effects on stability facets for hill numbers ", i , ".png"))
+  }
 
 # the end
