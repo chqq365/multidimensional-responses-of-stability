@@ -228,7 +228,8 @@ eff.trt4$stability.facets1<-factor(eff.trt4$stability.facets1, levels = c("invar
 colour.crosswalk <- c("positive" = "black", "negative" = "red")
 (pp.trt.all<-eff.trt4%>%filter((cutoff %in% c(1.28) ))%>%mutate(Value.scaled=abs(Value)*10)%>%
     mutate(direction=ifelse(Value>=0, "positive", "negative"))%>%
-    ggplot(aes(stability.facets1, Value.scaled,  colour = as.character(direction), size = (Value.scaled/10)))+theme_bw(base_size = 16)+    geom_point(position=pd, pch=15,alpha=0.6)+
+    ggplot(aes(stability.facets1, Value.scaled,  colour = as.character(direction), size = (Value.scaled/10)))+
+    theme_bw(base_size = 10)+    geom_point(position=pd, pch=15,alpha=0.6)+
     facet_wrap(~q , nrow=3, scales = "free_y")+
     scale_colour_manual(values = colour.crosswalk) +
     labs(x=NULL, y="Effect size of nutrient addition", size="Effect size", color="Direction"))
@@ -273,7 +274,7 @@ for(i in c(0.67, 1.28)){
                              list_plots_temp1$`1`,
                              list_plots_temp1$`2`,
                               nrow=1,  vjust=7,
-                             labels = c("Q = 0", "Q = 1", "Q = 2"), label_fontface = "bold", label_size = 18))
+                             labels = c("Q = 0", "Q = 1", "Q = 2"), label_fontface = "bold", label_size = 12))
   (pp.trt.effects1<-plot_grid(pp.trt.effects,
                               legend, rel_widths = c(8.8, 1.2)))
  
